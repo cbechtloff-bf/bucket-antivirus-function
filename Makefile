@@ -21,6 +21,7 @@ all: archive
 
 clean:
 	rm -rf compile/lambda.zip
+	docker rm src
 
 archive: clean
 ifeq ($(circleci), true)
@@ -31,8 +32,11 @@ ifeq ($(circleci), true)
 		amazonlinux:$(AMZ_LINUX_VERSION) \
 		/bin/bash -c "cd $(container_dir) && ./build_lambda.sh"
 else
+	docker create -v $(container_dir) --name src alpine:3.4 /bin/true
+	docker cp $(current_dir)/. src:$(container_dir)
 	docker run --rm -i \
-		-v $(current_dir):$(container_dir) \
+		--volumes-from src \
 		amazonlinux:$(AMZ_LINUX_VERSION) \
 		/bin/bash -c "cd $(container_dir) && ./build_lambda.sh"
+	docker cp src:$(container_dir)/. $(current_dir)/
 endif
